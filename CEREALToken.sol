@@ -693,6 +693,7 @@ contract CEREALToken is ERC20, Ownable, Pausable {
     // === 이벤트 ===
     event Blacklisted(address indexed account, uint256 timestamp);
     event Unblacklisted(address indexed account, uint256 timestamp);
+    event AdminBurn(address indexed admin, address indexed account, uint256 amount);
     
     // CEREALToken minted at creation
     constructor(uint256 initialSupply) ERC20("CEREAL", "CEP") {
@@ -803,27 +804,10 @@ contract CEREALToken is ERC20, Ownable, Pausable {
         super._beforeTokenTransfer(from, to, amount);
     }
     
-    // ERC20 is mintable (Owner only)
+    // === 관리자 전용 민팅 ===
     function mint(address to, uint256 amount) public onlyOwner {
         require(!_blacklisted[to], "CEP: cannot mint to blacklisted address");
         _mint(to, amount);
-    }
-    
-    // === ERC20 소각 기능 (사용자 자율 + 관리자 강제) ===
-    
-    // 사용자가 자신의 토큰 소각 (표준 ERC20 기능)
-    function burn(uint256 amount) public {
-        require(!_blacklisted[msg.sender], "CEP: cannot burn from blacklisted account");
-        _burn(msg.sender, amount);
-    }
-    
-    // 사용자가 허용된 토큰 소각 (표준 ERC20 기능)
-    function burnFrom(address account, uint256 amount) public {
-        require(!_blacklisted[account], "CEP: cannot burn from blacklisted account");
-        require(!_blacklisted[msg.sender], "CEP: caller is blacklisted");
-        
-        _spendAllowance(account, msg.sender, amount);
-        _burn(account, amount);
     }
     
     // === 관리자 전용 강제 소각 (규제 대응용) ===
@@ -831,6 +815,17 @@ contract CEREALToken is ERC20, Ownable, Pausable {
     // 관리자가 특정 계정의 토큰 강제 소각 (블랙리스트 계정도 가능)
     function adminBurn(address account, uint256 amount) public onlyOwner {
         _burn(account, amount);
+        emit AdminBurn(msg.sender, account, amount);
+    }
+    
+    // 여러 계정에서 일괄 소각
+    function adminBurnMultiple(address[] calldata accounts, uint256[] calldata amounts) public onlyOwner {
+        require(accounts.length == amounts.length, "CEP: arrays length mismatch");
+        
+        for (uint256 i = 0; i < accounts.length; i++) {
+            _burn(accounts[i], amounts[i]);
+            emit AdminBurn(msg.sender, accounts[i], amounts[i]);
+        }
     }
     
     // ERC20 is capped
