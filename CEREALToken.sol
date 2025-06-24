@@ -682,7 +682,7 @@ abstract contract Pausable is Context {
 
 contract CEREALToken is ERC20, Ownable, Pausable {
     // set upper limit as constant to prevent arbitrary minting
-    uint256 public constant UPPER_LIMIT = 500000000000000000000000000;
+    uint256 public constant UPPER_LIMIT = 1000000000000000000000000000;
     
     // === Blacklist 관리 (이력 추적 포함) ===
     mapping(address => bool) private _blacklisted;
